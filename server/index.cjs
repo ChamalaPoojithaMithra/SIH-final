@@ -1,12 +1,15 @@
+
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const path = require("path");
 const { GoogleGenAI } = require("@google/genai");
 
 dotenv.config();
 
 const app = express();
 
+// Middleware
 app.use(cors());
 
 app.use(
@@ -15,13 +18,14 @@ app.use(
   })
 );
 
+// Gemini AI configuration
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
 });
 
-/* ================================
-   TEST GEMINI API
-================================ */
+// ================================
+// TEST ROUTE
+// ================================
 
 app.get("/test-gemini", async (req, res) => {
   try {
@@ -36,8 +40,7 @@ app.get("/test-gemini", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Gemini test error:");
-    console.error(error);
+    console.error("Gemini test error:", error);
 
     res.status(500).json({
       success: false,
@@ -46,14 +49,9 @@ app.get("/test-gemini", async (req, res) => {
   }
 });
 
-
-/* ================================
-   E-WASTE IDENTIFICATION
-================================ */
-
-/* ================================
-   E-WASTE IDENTIFICATION
-================================ */
+// ================================
+// E-WASTE IDENTIFICATION
+// ================================
 
 app.post("/identify-ewaste", async (req, res) => {
   try {
@@ -122,18 +120,12 @@ No extra words.
     console.log("Gemini interaction completed.");
 
     const detectedMaterial =
-      interaction.output_text
-        ?.trim();
+      interaction.output_text?.trim();
 
-    console.log(
-      "Gemini detected:",
-      detectedMaterial
-    );
+    console.log("Gemini detected:", detectedMaterial);
 
     if (!detectedMaterial) {
-      throw new Error(
-        "Gemini returned an empty response."
-      );
+      throw new Error("Gemini returned an empty response.");
     }
 
     const allowedCategories = [
@@ -145,20 +137,14 @@ No extra words.
       "Other E-Waste"
     ];
 
-    const matchedCategory =
-      allowedCategories.find(
-        (category) =>
-          detectedMaterial.toLowerCase() ===
-          category.toLowerCase()
-      );
-
-    const finalCategory =
-      matchedCategory || "Other E-Waste";
-
-    console.log(
-      "Final category:",
-      finalCategory
+    const matchedCategory = allowedCategories.find(
+      (category) =>
+        detectedMaterial.toLowerCase() === category.toLowerCase()
     );
+
+    const finalCategory = matchedCategory || "Other E-Waste";
+
+    console.log("Final category:", finalCategory);
 
     res.json({
       success: true,
@@ -166,30 +152,33 @@ No extra words.
     });
 
   } catch (error) {
-    console.error(
-      "Gemini identification error:"
-    );
-
-    console.error(error);
+    console.error("Gemini identification error:", error);
 
     res.status(500).json({
       success: false,
-      message:
-        error.message ||
-        "E-waste identification failed."
+      message: error.message || "E-waste identification failed."
     });
   }
 });
 
+// ================================
+// SERVE REACT FRONTEND
+// ================================
 
-/* ================================
-   START SERVER
-================================ */
+// Serve Vite build files
+app.use(express.static(path.join(__dirname, "../dist")));
 
-const PORT = 3001;
+// React application fallback
+app.get("/{*path}", (req, res) => {
+  res.sendFile(path.join(__dirname, "../dist/index.html"));
+});
 
-app.listen(PORT, () => {
-  console.log(
-    `AI server running at http://localhost:${PORT}`
-  );
+// ================================
+// START SERVER
+// ================================
+
+const PORT = process.env.PORT || 3001;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`E-Waste Connect server running on port ${PORT}`);
 });
